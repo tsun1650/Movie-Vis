@@ -3,10 +3,22 @@ var country_data, country_count, country_budget, country_imdbscore, country_budg
 var xScale, yScale, yAxis, xAxis;
 var bars, width, height, svg;
 var selectList;
+var world_data = [];
 const animation_duration = 2000;
 const margin = {top: 20, right: 40, bottom: 20, left: 90};
 
-// load data
+
+
+//load world map data 
+d3.json("data/world.json", function(error, p) {
+   
+    all_features = p.features;
+    for (var i = 0; i < all_features.length; i++){
+        world_data.push(all_features[i].properties.name);
+    }
+});
+
+// load movie data
 d3.csv("movies.csv", function(d) {
     return {
         country : d.country,
@@ -20,7 +32,7 @@ d3.csv("movies.csv", function(d) {
     country_imdbscore = {};
     country_budget_count = {}
     for (var i = 0; i < data.length; i++) {
-        if (data[i].country){ // in case country doesn't have name
+        if (data[i].country && data[i].country != 'Official site'){ // in case country doesn't have name
             country_count[data[i].country] = 1 + (country_count[data[i].country] || 0);
             // account for missing budgets
             if (data[i].budget) {
@@ -213,9 +225,170 @@ function updateScalesFromData() {
         });
   }
 
+function load_word_map() {
+    console.log('world map')
+    
+    var mapboxAccessToken = "pk.eyJ1IjoidG9zdW4iLCJhIjoiY2p1anpyOGV3MGRjdDRhcXZsZndxNnZtbSJ9.A1_ZMPvZ0AASAQzzqM0e1g";
+    var map = L.map('world').setView([51.505, -0.09], 2);
+    
+	L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token='+ mapboxAccessToken, {
+		maxZoom: 18,
+		attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+			'<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+			'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+        id: 'mapbox.light',
+        text: 'her',
+        accessToken: "pk.eyJ1IjoidG9zdW4iLCJhIjoiY2p1anp0NXk3MGYydTN6bWl5cnFuaHdxNiJ9.AiRS14moB8D21HY8nDsokw"
+
+    }).addTo(map);
+
+    L.geoJson(world_data).addTo(map);
+    // control that shows state info on hover
+	var info = L.control();
+
+	info.onAdd = function (map) {
+		this._div = L.DomUtil.create('div', 'info');
+		this.update();
+		return this._div;
+	};
+
+	info.update = function (props) {
+		this._div.innerHTML = '<h4>Country</h4>' +  (props ?
+			'<b>' + props.country + '</b><br />'
+			: 'Hover over a state');
+	};
+
+    info.addTo(map);
+    // get color depending on population density value
+	function getColor(d) {
+		return d > 60000 ? '#800026' :
+				d > 40000  ? '#BD0026' :
+				d > 200  ? '#E31A1C' :
+				d > 100  ? '#FC4E2A' :
+				d > 50   ? '#FD8D3C' :
+				d > 20   ? '#FEB24C' :
+				d > 10   ? '#FED976' :
+							'#FFEDA0';
+	}
+
+	function style(feature) {
+		return {
+			weight: 2,
+			opacity: 1,
+			color: 'white',
+			dashArray: '3',
+			fillOpacity: 0.7,
+			fillColor: getColor(feature.properties.density)
+		};
+	}
+
+	function highlightFeature(e) {
+		var layer = e.target;
+
+		layer.setStyle({
+			weight: 5,
+			color: '#666',
+			dashArray: '',
+			fillOpacity: 0.7
+		});
+
+		if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+			layer.bringToFront();
+		}
+
+		info.update(layer.feature.properties);
+	}
+
+	var geojson;
+
+	function resetHighlight(e) {
+		geojson.resetStyle(e.target);
+		info.update();
+	}
+
+	function zoomToFeature(e) {
+		map.fitBounds(e.target.getBounds());
+	}
+
+	function onEachFeature(feature, layer) {
+		layer.on({
+			mouseover: highlightFeature,
+			mouseout: resetHighlight,
+			click: zoomToFeature
+		});
+	}
+    var jsoncountry = JSON.stringify(country_count);
+    console.log(jsoncountry)
+	geojson = L.geoJson(jsoncountry, {
+		style: style,
+		onEachFeature: onEachFeature
+	}).addTo(map);
+
+	
+
+	// var legend = L.control({position: 'bottomright'});
+
+	// legend.onAdd = function (map) {
+
+	// 	var div = L.DomUtil.create('div', 'info legend'),
+	// 		grades = [0, 10, 20, 50, 100, 200, 500, 1000],
+	// 		labels = [],
+	// 		from, to;
+
+	// 	for (var i = 0; i < grades.length; i++) {
+	// 		from = grades[i];
+	// 		to = grades[i + 1];
+
+	// 		labels.push(
+	// 			'<i style="background:' + getColor(from + 1) + '"></i> ' +
+	// 			from + (to ? '&ndash;' + to : '+'));
+	// 	}
+
+	// 	div.innerHTML = labels.join('<br>');
+	// 	return div;
+	// };
+
+	// legend.addTo(map);
+    // // Map and projection
+    // var path = d3.geoPath();
+    // var projection = d3.geoMercator()
+    // .scale(70)
+    // .center([0,20])
+    // .translate([w / 2, h / 2]);
+    // // Data and color scale
+    // var data = d3.map();
+    // var colorScale = d3.scaleThreshold()
+    // .domain([100000, 1000000, 10000000, 30000000, 100000000, 500000000])
+    // .range(d3.schemeBlues[7]);
+    // d3.queue()
+    // .defer(d3.json, "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
+    // .defer(d3.csv, "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world_population.csv", function(d) { data.set(d.code, +d.pop); })
+    // .await(ready);
+    // function ready(error, topo) {
+
+    //     // Draw the map
+    //     svg.append("g")
+    //       .selectAll("path")
+    //       .data(topo.features)
+    //       .enter()
+    //       .append("path")
+    //         // draw each country
+    //         .attr("d", d3.geoPath()
+    //           .projection(projection)
+    //         )
+    //         // set the color of each country
+    //         .attr("fill", function (d) {
+    //           d.total = data.get(d.id) || 0;
+    //           return colorScale(d.total);
+    //         });
+    //       }
+}
+
+
 function initialize() {
     setup();
     build_scales();
     updateScalesFromData(); 
     updating();
+    load_word_map();
 }
