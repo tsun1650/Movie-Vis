@@ -18,18 +18,18 @@
 }
 
 body {
-	background-color: #E7E7E1;
+	background-color: #FFF1F0;
 }
 
 
 text {
 	font-family: 'Lora', serif;
-	color:#3D3D3D;
+	color:#231F20;
 }
 
 h1, h2, h3, p {
 	font-family: 'Lora', serif;
-	color:#3D3D3D;
+	color:#231F20;
 }
 h1, h2, h3 {
 	font-family: 'Roboto', sans-serif;
