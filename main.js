@@ -11,16 +11,36 @@ d3.csv("movies.csv", function(d) {
         country : d.country,
         title : d.movie_title,
         budget : +d.budget,
-        imdb_score : +d.imdb_score
+        imdb_score : +d.imdb_score,
+        director_name: d.director_name
     }; 
     }, function(data) {
     country_count = {};
     country_budget = {};
     country_imdbscore = {};
-    country_budget_count = {}
+    country_budget_count = {};
+    country_movies = {};
+
     for (var i = 0; i < data.length; i++) {
-        if (data[i].country){ // in case country doesn't have name
+        if (data[i].country && data[i].country != "Official site"){ // in case country doesn't have name
             country_count[data[i].country] = 1 + (country_count[data[i].country] || 0);
+            if (country_movies[data[i].country]){
+                country_movies[data[i].country].push({
+                    "movie_title": data[i].title,
+                    "movie_budget": data[i].budget,
+                    "movie_imdb": data[i].imdb_score,
+                    "director_name": data[i].director_name
+                });
+            } else {
+                country_movies[data[i].country] = [];
+                country_movies[data[i].country].push({
+                    "movie_title": data[i].title,
+                    "movie_budget": data[i].budget,
+                    "movie_imdb": data[i].imdb_score,
+                    "director_name": data[i].director_name
+                });
+            }
+            
             // account for missing budgets
             if (data[i].budget) {
                 country_budget_count[data[i].country] = 1 + (country_budget_count[data[i].country] || 0);
@@ -30,12 +50,15 @@ d3.csv("movies.csv", function(d) {
         }
     }
     country_data = []
+    console.log(country_data);
     for (country in country_count){
         country_data.push({
             "country" : country,
             "count" : +country_count[country],
             "avg_budget": +country_budget[country] /  country_budget_count[country],
-            "avg_imdbscore": +country_imdbscore[country] /  country_count[country]
+            "avg_imdbscore": +country_imdbscore[country] /  country_count[country],
+            "movies": country_movies[country]
+
         });   
     }    
     initialize();
@@ -130,48 +153,6 @@ function updateScalesFromData() {
         });
     
   }
-
-// function start() {
-//                 document.getElementById('filterbutton').on('click', function() {
-//                     bars.selectAll('.bar')
-//                     .transition()
-//                     .duration(function(d) {
-//                         return Math.random() * 1000;
-//                     })
-//                     .delay(function(d) {
-//                         return d.frequency * 8000
-//                     })
-                    
-//                     .attr('width', function (d) {
-//                         if (selectList.options[selectList.selectedIndex].value == "Average IMDB Rating"){
-//                             xScale.domain([0, d3.max(country_data, function(d) {
-//                                 return d.avg_imdbscore;
-//                             })]);
-//                             console.log('measure by rating');
-//                             return xScale(d.avg_imdbscore);
-//                         } 
-//                         else if (selectList.options[selectList.selectedIndex].value == "Average Budget"){
-//                             console.log('measure by budget');
-//                             xScale.domain([0, d3.max(country_data, function(d) {
-//                                 return d.avg_budget;
-//                             })]);
-//                             return xScale(d.avg_budget);
-//                         } 
-//                         else if (selectList.options[selectList.selectedIndex].value == "Total Movies"){
-//                             console.log('measure by count');
-//                             xScale.domain([0, d3.max(country_data, function(d) {
-//                                 return d.count;
-//                             })]);
-//                             return xScale(d.count);
-//                         } 
-                        
-//                     });
-                
-//                 });
-    
-
- 
-// }
 
 function initialize() {
     setup();
