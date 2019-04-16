@@ -16,3 +16,29 @@
 .x.axis path {
   display: none;
 }
+
+body {
+	background-color: #E7E7E1;
+}
+
+
+text {
+	font-family: 'Lora', serif;
+	color:#3D3D3D;
+}
+
+h1, h2, h3, p {
+	font-family: 'Lora', serif;
+	color:#3D3D3D;
+}
+h1, h2, h3 {
+	font-family: 'Roboto', sans-serif;
+	font-weight:bold;
+}
+
+
+.container {
+	display: grid;
+	width: 60%;
+	margin:0 auto;
+}
