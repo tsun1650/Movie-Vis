@@ -2,6 +2,7 @@
 var country_data, country_count, country_budget, country_imdbscore, country_budget_count;
 var xScale, yScale, yAxis, xAxis;
 var bars, width, height, svg;
+var selectList;
 const animation_duration = 2000;
 const margin = {top: 20, right: 40, bottom: 20, left: 90};
 
@@ -73,7 +74,7 @@ function setup() {
     
 
     //create select options to show countries by
-    var selectList = document.createElement("SELECT")
+    selectList = document.createElement("SELECT")
     selectList.id = 'sList';
     var ops = ["Average Budget","Total Movies", "Average IMDB Rating"];
     document.getElementById("graph").appendChild(selectList);
@@ -143,85 +144,78 @@ function updateScalesFromData() {
     
   }
   function updating() {
-    d3.select("#sortAsc").on("click", function() {
-        console.log('clicked button')
-        country_data.sort(function(a, b) {
-          return d3.descending(a.avg_budget, b.avg_budget)
+        //broken
+        d3.select("#sortAsc").on("click", function() {
+            console.log('clicked button')
+            country_data.sort(function(a, b) {
+            return d3.descending(a.avg_budget, b.avg_budget)
+            })
+            yScale.domain(country_data.map(function(d) {
+            return d.country;
+            }));
+            // sort by asc
+            // https://bl.ocks.org/anonymous/bc5a9691a3417b403d4e8ade3297afa3/3a2434c1c2849e476791e581754ec27e055db4d6
+            svg.selectAll(".bar")
+                .transition()
+                .duration(500)
+                .attr("y", function(d, i) {
+                    return yScale(d.country);
+                })
+        
+            svg.selectAll(".val-label")
+                .transition()
+                .duration(500)
+                .attr("y", function(d, i) {
+                    return yScale(d.country)+ yScale.bandwidth() / 2;
+                })
+        
+            svg.selectAll(".bar-label")
+                .transition()
+                .duration(500)
+                .attr("transform", function(d, i) {
+                return "translate(" + (yScale(d.country) + yScale.bandwidth() / 2 - 8) + "," + (width + 15) + ")" + " rotate(45)"
+                })
         })
-        yScale.domain(country_data.map(function(d) {
-          return d.country;
-        }));
-        // sort by asc
-        // https://bl.ocks.org/anonymous/bc5a9691a3417b403d4e8ade3297afa3/3a2434c1c2849e476791e581754ec27e055db4d6
-        svg.selectAll(".bar")
-            .transition()
-            .duration(500)
-            .attr("y", function(d, i) {
-                return yScale(d.country);
-            })
-      
-        svg.selectAll(".val-label")
-            .transition()
-            .duration(500)
-            .attr("y", function(d, i) {
-                return yScale(d.country)+ yScale.bandwidth() / 2;
-            })
-      
-        svg.selectAll(".bar-label")
-            .transition()
-            .duration(500)
-            .attr("transform", function(d, i) {
-            return "translate(" + (yScale(d.country) + yScale.bandwidth() / 2 - 8) + "," + (width + 15) + ")" + " rotate(45)"
-            })
-      })
-  }
-
-// function start() {
-//                 document.getElementById('filterbutton').on('click', function() {
-//                     bars.selectAll('.bar')
-//                     .transition()
-//                     .duration(function(d) {
-//                         return Math.random() * 1000;
-//                     })
-//                     .delay(function(d) {
-//                         return d.frequency * 8000
-//                     })
+        d3.select('#filterbutton').on('click', function() {
+            d3.select('#xaxisname').text(selectList.options[selectList.selectedIndex].value)
+           
+            bars.selectAll('.bar')
+                .transition()
+                .duration(function(d) {
+                    return Math.random() * 1000;
+                })
+                .delay(function(d) {
+                    return d.frequency * 8000
+                })
+                // none of this works yet
+                .attr('width', function (d) {
+                    if (selectList.options[selectList.selectedIndex].value == "Average IMDB Rating"){
+                        xScale.domain([0, d3.max(country_data, function(d) {
+                            return d.avg_imdbscore;
+                        })]);
+                        return xScale(d.avg_imdbscore);
+                    } 
+                    else if (selectList.options[selectList.selectedIndex].value == "Average Budget"){
+                        xScale.domain([0, d3.max(country_data, function(d) {
+                            return d.avg_budget;
+                        })]);
+                        return xScale(d.avg_budget);
+                    } 
+                    else if (selectList.options[selectList.selectedIndex].value == "Total Movies"){
+                        xScale.domain([0, d3.max(country_data, function(d) {
+                            return d.count;
+                        })]);
+                        return xScale(d.count);
+                    } 
                     
-//                     .attr('width', function (d) {
-//                         if (selectList.options[selectList.selectedIndex].value == "Average IMDB Rating"){
-//                             xScale.domain([0, d3.max(country_data, function(d) {
-//                                 return d.avg_imdbscore;
-//                             })]);
-//                             console.log('measure by rating');
-//                             return xScale(d.avg_imdbscore);
-//                         } 
-//                         else if (selectList.options[selectList.selectedIndex].value == "Average Budget"){
-//                             console.log('measure by budget');
-//                             xScale.domain([0, d3.max(country_data, function(d) {
-//                                 return d.avg_budget;
-//                             })]);
-//                             return xScale(d.avg_budget);
-//                         } 
-//                         else if (selectList.options[selectList.selectedIndex].value == "Total Movies"){
-//                             console.log('measure by count');
-//                             xScale.domain([0, d3.max(country_data, function(d) {
-//                                 return d.count;
-//                             })]);
-//                             return xScale(d.count);
-//                         } 
-                        
-//                     });
-                
-//                 });
-    
-
- 
-// }
+                });
+            
+        });
+  }
 
 function initialize() {
     setup();
     build_scales();
     updateScalesFromData(); 
     updating();
-    
 }
