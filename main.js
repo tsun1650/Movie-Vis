@@ -7,19 +7,16 @@ var world_data = [];
 const animation_duration = 2000;
 const margin = {top: 20, right: 40, bottom: 20, left: 90};
 
-
-
 //load world map data 
-d3.json("data/world.json", function(error, p) {
-   
-    all_features = p.features;
-    for (var i = 0; i < all_features.length; i++){
-        world_data.push(all_features[i].properties.name);
-    }
-});
+// d3.json("data/world.json", function(error, p) {
+//     all_features = p.features;
+//     for (var i = 0; i < all_features.length; i++){
+//         world_data.push(all_features[i].properties.name);
+//     }
+// });
 
 // load movie data
-d3.csv("movies.csv", function(d) {
+d3.csv("data/movies.csv", function(d) {
     return {
         country : d.country,
         title : d.movie_title,
@@ -53,8 +50,6 @@ d3.csv("movies.csv", function(d) {
     }    
     initialize();
 });
-
-
 
 function setup() {
     console.log('setup')
@@ -154,241 +149,127 @@ function updateScalesFromData() {
             return yScale.bandwidth()*.8;
         });
     
-  }
-  function updating() {
-        //broken
-        d3.select("#sortAsc").on("click", function() {
-            console.log('clicked button')
-            country_data.sort(function(a, b) {
-            return d3.descending(a.avg_budget, b.avg_budget)
-            })
-            yScale.domain(country_data.map(function(d) {
-            return d.country;
-            }));
-            // sort by asc
-            // https://bl.ocks.org/anonymous/bc5a9691a3417b403d4e8ade3297afa3/3a2434c1c2849e476791e581754ec27e055db4d6
-            svg.selectAll(".bar")
-                .transition()
-                .duration(500)
-                .attr("y", function(d, i) {
-                    return yScale(d.country);
-                })
-        
-            svg.selectAll(".val-label")
-                .transition()
-                .duration(500)
-                .attr("y", function(d, i) {
-                    return yScale(d.country)+ yScale.bandwidth() / 2;
-                })
-        
-            svg.selectAll(".bar-label")
-                .transition()
-                .duration(500)
-                .attr("transform", function(d, i) {
-                return "translate(" + (yScale(d.country) + yScale.bandwidth() / 2 - 8) + "," + (width + 15) + ")" + " rotate(45)"
-                })
-        })
-        d3.select('#filterbutton').on('click', function() {
-            d3.select('#xaxisname').text(selectList.options[selectList.selectedIndex].value)
-           
-            bars.selectAll('.bar')
-                .transition()
-                .duration(function(d) {
-                    return Math.random() * 1000;
-                })
-                .delay(function(d) {
-                    return d.frequency * 8000
-                })
-                // none of this works yet
-                .attr('width', function (d) {
-                    if (selectList.options[selectList.selectedIndex].value == "Average IMDB Rating"){
-                        xScale.domain([0, d3.max(country_data, function(d) {
-                            return d.avg_imdbscore;
-                        })]);
-                        return xScale(d.avg_imdbscore);
-                    } 
-                    else if (selectList.options[selectList.selectedIndex].value == "Average Budget"){
-                        xScale.domain([0, d3.max(country_data, function(d) {
-                            return d.avg_budget;
-                        })]);
-                        return xScale(d.avg_budget);
-                    } 
-                    else if (selectList.options[selectList.selectedIndex].value == "Total Movies"){
-                        xScale.domain([0, d3.max(country_data, function(d) {
-                            return d.count;
-                        })]);
-                        return xScale(d.count);
-                    } 
-                    
-                });
-            
-        });
-  }
-
-function load_word_map() {
-    console.log('world map')
-    
-    var mapboxAccessToken = "pk.eyJ1IjoidG9zdW4iLCJhIjoiY2p1anpyOGV3MGRjdDRhcXZsZndxNnZtbSJ9.A1_ZMPvZ0AASAQzzqM0e1g";
-    var map = L.map('world').setView([51.505, -0.09], 2);
-    
-	L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token='+ mapboxAccessToken, {
-		maxZoom: 18,
-		attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
-			'<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
-			'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-        id: 'mapbox.light',
-        text: 'her',
-        accessToken: "pk.eyJ1IjoidG9zdW4iLCJhIjoiY2p1anp0NXk3MGYydTN6bWl5cnFuaHdxNiJ9.AiRS14moB8D21HY8nDsokw"
-
-    }).addTo(map);
-
-    L.geoJson(world_data).addTo(map);
-    // control that shows state info on hover
-	var info = L.control();
-
-	info.onAdd = function (map) {
-		this._div = L.DomUtil.create('div', 'info');
-		this.update();
-		return this._div;
-	};
-
-	info.update = function (props) {
-		this._div.innerHTML = '<h4>Country</h4>' +  (props ?
-			'<b>' + props.country + '</b><br />'
-			: 'Hover over a state');
-	};
-
-    info.addTo(map);
-    // get color depending on population density value
-	function getColor(d) {
-		return d > 60000 ? '#800026' :
-				d > 40000  ? '#BD0026' :
-				d > 200  ? '#E31A1C' :
-				d > 100  ? '#FC4E2A' :
-				d > 50   ? '#FD8D3C' :
-				d > 20   ? '#FEB24C' :
-				d > 10   ? '#FED976' :
-							'#FFEDA0';
-	}
-
-	function style(feature) {
-		return {
-			weight: 2,
-			opacity: 1,
-			color: 'white',
-			dashArray: '3',
-			fillOpacity: 0.7,
-			fillColor: getColor(feature.properties.density)
-		};
-	}
-
-	function highlightFeature(e) {
-		var layer = e.target;
-
-		layer.setStyle({
-			weight: 5,
-			color: '#666',
-			dashArray: '',
-			fillOpacity: 0.7
-		});
-
-		if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-			layer.bringToFront();
-		}
-
-		info.update(layer.feature.properties);
-	}
-
-	var geojson;
-
-	function resetHighlight(e) {
-		geojson.resetStyle(e.target);
-		info.update();
-	}
-
-	function zoomToFeature(e) {
-		map.fitBounds(e.target.getBounds());
-	}
-
-	function onEachFeature(feature, layer) {
-		layer.on({
-			mouseover: highlightFeature,
-			mouseout: resetHighlight,
-			click: zoomToFeature
-		});
-	}
-    var jsoncountry = JSON.stringify(country_count);
-    console.log(jsoncountry)
-	geojson = L.geoJson(jsoncountry, {
-		style: style,
-		onEachFeature: onEachFeature
-	}).addTo(map);
-
-	
-
-	// var legend = L.control({position: 'bottomright'});
-
-	// legend.onAdd = function (map) {
-
-	// 	var div = L.DomUtil.create('div', 'info legend'),
-	// 		grades = [0, 10, 20, 50, 100, 200, 500, 1000],
-	// 		labels = [],
-	// 		from, to;
-
-	// 	for (var i = 0; i < grades.length; i++) {
-	// 		from = grades[i];
-	// 		to = grades[i + 1];
-
-	// 		labels.push(
-	// 			'<i style="background:' + getColor(from + 1) + '"></i> ' +
-	// 			from + (to ? '&ndash;' + to : '+'));
-	// 	}
-
-	// 	div.innerHTML = labels.join('<br>');
-	// 	return div;
-	// };
-
-	// legend.addTo(map);
-    // // Map and projection
-    // var path = d3.geoPath();
-    // var projection = d3.geoMercator()
-    // .scale(70)
-    // .center([0,20])
-    // .translate([w / 2, h / 2]);
-    // // Data and color scale
-    // var data = d3.map();
-    // var colorScale = d3.scaleThreshold()
-    // .domain([100000, 1000000, 10000000, 30000000, 100000000, 500000000])
-    // .range(d3.schemeBlues[7]);
-    // d3.queue()
-    // .defer(d3.json, "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
-    // .defer(d3.csv, "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world_population.csv", function(d) { data.set(d.code, +d.pop); })
-    // .await(ready);
-    // function ready(error, topo) {
-
-    //     // Draw the map
-    //     svg.append("g")
-    //       .selectAll("path")
-    //       .data(topo.features)
-    //       .enter()
-    //       .append("path")
-    //         // draw each country
-    //         .attr("d", d3.geoPath()
-    //           .projection(projection)
-    //         )
-    //         // set the color of each country
-    //         .attr("fill", function (d) {
-    //           d.total = data.get(d.id) || 0;
-    //           return colorScale(d.total);
-    //         });
-    //       }
 }
+function updating() {
+    d3.select('#filterbutton').on('click', function() {
+        d3.select('#xaxisname').text(selectList.options[selectList.selectedIndex].value)
+        
+        bars.selectAll('.bar')
+            .transition()
+            .duration(function(d) {
+                return Math.random() * 1000;
+            })
+            .delay(function(d) {
+                return d.frequency * 8000
+            })
+            // none of this works yet
+            .attr('width', function (d) {
+                if (selectList.options[selectList.selectedIndex].value == "Average IMDB Rating"){
+                    xScale.domain([0, d3.max(country_data, function(d) {
+                        return d.avg_imdbscore;
+                    })]);
+                    return xScale(d.avg_imdbscore);
+                } 
+                else if (selectList.options[selectList.selectedIndex].value == "Average Budget"){
+                    xScale.domain([0, d3.max(country_data, function(d) {
+                        return d.avg_budget;
+                    })]);
+                    return xScale(d.avg_budget);
+                } 
+                else if (selectList.options[selectList.selectedIndex].value == "Total Movies"){
+                    xScale.domain([0, d3.max(country_data, function(d) {
+                        return d.count;
+                    })]);
+                    return xScale(d.count);
+                } 
+                
+            });
+        
+    });
+}
+function createChoropleth() {
+    // define map projection
+    w= 1000;
+    h = 800
+   
+    var projection = d3.geoMercator()
+        .translate([w/2, h/1.5])
+        .scale([150]);
 
+    //Define default path generator
+    var path = d3.geoPath()
+        .projection(projection);
+    var svg = d3.select("#world")
+        .append("svg")
+            .attr("id", "chart")
+            .attr("width", w)
+            .attr("height", h)
+            .append("g")
+                //.attr("tranform", "translate(0 ," + margin.top + ")");
+
+    var color = d3.scaleQuantile()
+        .range(["rgb(237, 248, 233)", "rgb(186, 228, 179)", "rgb(116,196,118)", "rgb(49,163,84)", "rgb(0,109,44)"]);
+    var min = Math.min.apply(null, country_data.map(item => item.avg_budget)),
+        max = Math.max.apply(null, country_data.map(item => item.avg_budget));
+    color.domain([min, max]);
+    d3.json("data/world.json", function(error, p) {
+        all_features = p.features;
+        for (var i = 0; i < all_features.length; i++){
+            world_data.push(all_features[i].properties.name);
+        }
+    });
+    d3.json("data/world.json", function(json){
+
+        //Merge the agriculture and GeoJSON data
+        //Loop through once for each agriculture data value
+        for(var i = 0; i < country_data.length; i++){
+            // grab state name
+            var dataCountry = country_data[i].country;
+
+            //grab data value, and convert from string to float
+            var dataValue = parseFloat(country_data[i].avg_budget);
+            // console.log(dataCountry," ", dataValue);
+            //find the corresponding state inside the GeoJSON
+            for(var n = 0; n < json.features.length; n++){
+
+                    // properties name gets the states name
+                    var jsonCountry = json.features[n].properties.name;
+                    // if statment to merge by name of state
+                    if(dataCountry == jsonCountry){
+                        //Copy the data value into the JSON
+                        // basically creating a new value column in JSON data
+                        json.features[n].properties.value = dataValue;
+                        // console.log(dataCountry, ", ", jsonCountry, ', ', dataValue)
+                        //stop looking through the JSON
+                        break;
+                    }
+                }
+            }
+
+        svg.selectAll("path")
+            .data(json.features)
+            .enter()
+            .append("path")
+            .attr("d", path)
+            .style("fill", function(d){
+                //get the data value
+                var value = d.properties.value;
+                if(value){
+                    //If value exists
+                    return color(value);
+                } else {
+                    // If value is undefined
+                    //we do this because alaska and hawaii are not in dataset we are using but still in projections
+                    return "#ccc"
+                }
+            });
+        });
+}
 
 function initialize() {
     setup();
     build_scales();
     updateScalesFromData(); 
     updating();
-    load_word_map();
+    createChoropleth();
 }
