@@ -52,8 +52,8 @@ d3.csv("data/movies.csv", function(d) {
     initialize();
 });
 
-function setup() {
-    console.log('setup')
+function setup_graph() {
+   
     var graph = document.getElementById('graph');
     
     width = 900 - margin.left - margin.right;
@@ -92,28 +92,45 @@ function setup() {
         option.text = ops[i];
         selectList.appendChild(option);
     }
-    // add a axis label 
+    // add axis labels
     svg.append("text")
         .attr("x", 80)
         .attr("y", 13)
         .attr("class", "label")
-        .text("Countries");
-
+        // .text("Countries");
+        .text("IMDB Rating")
     svg.append("text")
         .attr('id','xaxisname')
         .attr("x", width-2)
         .attr("y", height-6)
         .attr("text-anchor", "end")
         .attr("class", "label")
-        .text(selectList.options[selectList.selectedIndex].value);  
+        // .text(selectList.options[selectList.selectedIndex].value);  
+        .text("Budget")
 }
-
-function build_scales() {
+function build_scales2() {
     xScale = d3.scaleLinear().range([0, width]);
-    yScale = d3.scaleBand().rangeRound([0, height], 0.8);
+    yScale = d3.scaleLinear().range([0, height]);
     yAxis = d3.axisLeft(yScale);
 
     // https://stackoverflow.com/questions/42337710/d3-bar-chart-sorting-not-working
+    country_data.sort((a, b) => d3.descending(a.avg_budget, b.avg_budget));
+    
+    xScale.domain([0, d3.max(country_data, function(d) {
+        return d.avg_budget;
+    })]);
+
+    yScale.domain(country_data.map(function(d) {
+        return d.country;
+    }));
+}
+function build_scales() {
+    xScale = d3.scaleLinear().range([0, width])
+    yScale = d3.scaleBand().rangeRound([0, height], 0.8);
+    yAxis = d3.axisLeft(yScale);
+    xAxis = d3.axisBottom().scale(xScale);
+
+    
     country_data.sort((a, b) => d3.descending(a.avg_budget, b.avg_budget));
     
     xScale.domain([0, d3.max(country_data, function(d) {
@@ -279,7 +296,7 @@ function createChoropleth() {
 }
 
 function initialize() {
-    setup();
+    setup_graph();
     build_scales();
     updateScalesFromData(); 
     updating();
