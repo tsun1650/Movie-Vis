@@ -1,9 +1,5 @@
-.bar {
-  fill: steelblue;
-}
-.bar:hover {
-  fill: brown;
-}
+
+
 .axis {
   font: 10px sans-serif;
 }
@@ -30,6 +26,7 @@ text {
 h1, h2, h3, p {
 	font-family: 'Lora', serif;
 	color:#231F20;
+	overflow-wrap: break-word;
 }
 h1, h2, h3 {
 	font-family: 'Roboto', sans-serif;
@@ -38,7 +35,10 @@ h1, h2, h3 {
 
 
 .container {
-	display: grid;
 	width: 60%;
 	margin:0 auto;
+}
+
+button {
+	display: inline;
 }

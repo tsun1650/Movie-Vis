@@ -82,11 +82,10 @@ function setup() {
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");   
     
     d3.select(graph)
-        .append('p')
-            .append('button')
-                .attr('id','filterbutton')
-                .style("border", "1px solid black")
-                .text('Filter Data');
+        .append('button')
+            .attr('id','filterbutton')
+            .style("border", "1px solid black")
+            .text('Filter Data');
 
     //create select options to show countries by
     var selectList = document.createElement("SELECT")
@@ -105,6 +104,7 @@ function setup() {
         .attr("y", 13)
         .attr("class", "label")
         .text("Countries");
+
 
 //   svg.append("text")
 //     .attr('id','yaxisname')
@@ -150,7 +150,18 @@ function updateScalesFromData() {
         })
         .attr('height', function(d) {
             return yScale.bandwidth()*.8;
-        });
+        })
+        .attr('fill', "steelblue")
+        .on("mouseover", function() {
+            d3.select(this)
+                .attr("fill", "red");
+
+        })
+        .on("mouseout", function(d, i) {
+            d3.select(this).attr("fill", function() {
+                return "steelblue";
+            });
+        });;
     
   }
 
