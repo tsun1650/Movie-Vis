@@ -1,12 +1,13 @@
 //window.onload = initialize;
 var country_data;
 var xScale, yScale, yAxis, xAxis;
-var bars, width, height, svg;
+var bars, width, height, svg, map_svg, path, tip;
 var selectList;
 var world_data = [];
 var movie_data = [];
 const animation_duration = 2000;
 const margin = {top: 20, right: 40, bottom: 20, left: 40};
+
 
 
 // load movie data
@@ -76,8 +77,15 @@ d3.csv("data/movies.csv", function(d) {
         });   
     }    
     initialize();
-    });
-
+});
+//load world map data 
+d3.json("data/world.json", function(error, p) {
+    all_features = p.features;
+    for (var i = 0; i < all_features.length; i++){
+        world_data.push(all_features[i].properties.name);
+    }
+    
+});
 function setup_graph() {
    
     width = 900 - margin.left - margin.right;
@@ -184,42 +192,22 @@ function build_scatterplot() {
       });
   }
   
+function setMeasure(measure) {
+    measureFilter = measure;
+    update_choropleth();
 
+}
 function updating() {
     d3.select('#filterbutton').on('click', function() {
-        d3.select('#xaxisname').text(selectList.options[selectList.selectedIndex].value)
+       
+        v = selectList.options[selectList.selectedIndex].value
+        console.log(v);
+        if (v == "Average IMDB Rating") colorMap("avg_imdbscore");
         
-        bars.selectAll('.bar')
-            .transition()
-            .duration(function(d) {
-                return Math.random() * 1000;
-            })
-            .delay(function(d) {
-                return d.frequency * 8000
-            })
-            // none of this works yet
-            .attr('width', function (d) {
-                if (selectList.options[selectList.selectedIndex].value == "Average IMDB Rating"){
-                    xScale.domain([0, d3.max(country_data, function(d) {
-                        return d.avg_imdbscore;
-                    })]);
-                    return xScale(d.avg_imdbscore);
-                } 
-                else if (selectList.options[selectList.selectedIndex].value == "Average Budget"){
-                    xScale.domain([0, d3.max(country_data, function(d) {
-                        return d.avg_budget;
-                    })]);
-                    return xScale(d.avg_budget);
-                } 
-                else if (selectList.options[selectList.selectedIndex].value == "Total Movies"){
-                    xScale.domain([0, d3.max(country_data, function(d) {
-                        return d.count;
-                    })]);
-                    return xScale(d.count);
-                } 
-                
-            });
+        else if (v == "Average Budget") colorMap("avg_budget");
         
+        else if (v == "Total Movies") colorMap("count");
+         
     });
 }
 function createChoropleth() {
@@ -231,45 +219,51 @@ function createChoropleth() {
         .translate([w/2, h/1.5])
         .scale([130]);
 
-    var tip = d3.tip()
-        .attr('class', 'd3-tip')
-        .offset([-7, 0])
-        .html(function(d) {
-            var price = (d.properties.value) ?  "$" + d.properties.value.toFixed(2) :  "$0";
-            return "<strong>"+d.properties.name + "</strong></br>" + price;
-            
-        })
+    
     //Define default path generator
-    var path = d3.geoPath()
+    path = d3.geoPath()
         .projection(projection);
-    var svg = d3.select("#world")
+    map_svg = d3.select("#world")
         .append("svg")
             .attr("id", "worldmap")
             .attr("width", w)
             .attr("height", h)
             .append("g")
                 .attr("transform", "translate(" + 10 + "," + 10 + ")")
-
-    svg.call(tip);
+    
+}
+function colorMap(measure_val){
+    
     var color = d3.scaleQuantile()
-        .range(["rgb(186, 228, 179)", "rgb(139, 201, 128)", "rgb(116,196,118)", "rgb(30, 158, 69)", "rgb(0,109,44)"]);
-
-    var min = Math.min.apply(null, country_data.map(item => item.avg_budget)),
+        .range(['rgb(237,248,233)','rgb(186,228,179)','rgb(116,196,118)','rgb(49,163,84)','rgb(0,109,44)']);
+    
+    if (measure_val == 'avg_budget') {
+        var min = Math.min.apply(null, country_data.map(item => item.avg_budget)),
         max = Math.max.apply(null, country_data.map(item => item.avg_budget));
+    } else if (measure_val == 'avg_imdbscore') {
+        var min = Math.min.apply(null, country_data.map(item => item.avg_imdbscore)),
+        max = Math.max.apply(null, country_data.map(item => item.avg_imdbscore));
+    } else if (measure_val == 'count') {
+        var min = Math.min.apply(null, country_data.map(item => item.count)),
+        max = Math.max.apply(null, country_data.map(item => item.count));
+    }
+
     color.domain([min, max]);
-    d3.json("data/world.json", function(error, p) {
-        all_features = p.features;
-        for (var i = 0; i < all_features.length; i++){
-            world_data.push(all_features[i].properties.name);
-        }
-    });
+    
     d3.json("data/world.json", function(json){
 
         //Merge data
         for (var i = 0; i < country_data.length; i++){
             var dataCountry = country_data[i].country;
-            var dataValue = parseFloat(country_data[i].avg_budget);
-            
+            var dataValue;
+            if (measure_val == 'avg_budget') {
+                dataValue = parseFloat(country_data[i].avg_budget);
+            } else if (measure_val == 'avg_imdbscore') {
+                dataValue = parseFloat(country_data[i].avg_imdbscore);
+            } else if (measure_val == 'count') {
+                dataValue = parseFloat(country_data[i].count);
+            }
+           
             for (var n = 0; n < json.features.length; n++){
                     var jsonCountry = json.features[n].properties.name;
                     if (dataCountry == jsonCountry){
@@ -280,14 +274,16 @@ function createChoropleth() {
                 }
             }
 
-        svg.selectAll("path")
+        var paths = map_svg.selectAll("path")
             .data(json.features)
             .enter()
             .append("path")
             .attr("d", path)
             .style("fill", function(d){
                 //get the data value
+                
                 var value = d.properties.value;
+                
                 if(value){
                     //If value exists
                     return color(value);
@@ -310,7 +306,29 @@ function createChoropleth() {
                 }
            });
         });
+
+        tip = d3.tip()
+        .attr('class', 'd3-tip')
+        .offset([-7, 0])
+        .html(function(d) {
+            var dataval;
+            if (measure_val == 'avg_budget') {
+                dataval = (d.properties.value) ?  "$" + d.properties.value.toFixed(2) :  "$0";
+            } else if (measure_val == 'avg_imdbscore') {
+                dataval = dataval = (d.properties.value) ?  d.properties.value: '0';
+            } else if (measure_val == 'count') {
+                dataval = dataval = (d.properties.value) ?  d.properties.value: '0';
+            }
+            return "<strong>"+d.properties.name + "</strong></br>" + dataval;
+            
+            
+        })
+
+    map_svg.call(tip);
+
 }
+    
+
 
 
 function initialize() {
@@ -318,7 +336,10 @@ function initialize() {
     build_scales();
     build_buttons();    
     updateScalesFromData(); 
+    
     build_scatterplot();
     updating();
     createChoropleth();
+    colorMap("avg_imdbscore");
+    
 }
