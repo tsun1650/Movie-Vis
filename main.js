@@ -1,20 +1,13 @@
 //window.onload = initialize;
-var country_data, country_count, country_budget, country_imdbscore, country_budget_count;
+var country_data;
 var xScale, yScale, yAxis, xAxis;
 var bars, width, height, svg;
 var selectList;
 var world_data = [];
+var movie_data = [];
 const animation_duration = 2000;
-const margin = {top: 20, right: 40, bottom: 20, left: 90};
+const margin = {top: 20, right: 40, bottom: 20, left: 40};
 
-
-//load world map data 
-// d3.json("data/world.json", function(error, p) {
-//     all_features = p.features;
-//     for (var i = 0; i < all_features.length; i++){
-//         world_data.push(all_features[i].properties.name);
-//     }
-// });
 
 // load movie data
 d3.csv("data/movies.csv", function(d) {
@@ -26,31 +19,32 @@ d3.csv("data/movies.csv", function(d) {
         director_name: d.director_name
     }; 
     }, function(data) {
-    country_count = {};
-    country_budget = {};
-    country_imdbscore = {};
-    country_budget_count = {};
-    country_movies = {};
+        // setting up for world map data
+        var country_count = {};
+        var country_budget = {};
+        var country_imdbscore = {};
+        var country_budget_count = {};
+        var country_movies = {};
 
-    for (var i = 0; i < data.length; i++) {
-        if (data[i].country && data[i].country != "Official site"){ // in case country doesn't have name
-            country_count[data[i].country] = 1 + (country_count[data[i].country] || 0);
-            if (country_movies[data[i].country]){
-                country_movies[data[i].country].push({
-                    "movie_title": data[i].title,
-                    "movie_budget": data[i].budget,
-                    "movie_imdb": data[i].imdb_score,
-                    "director_name": data[i].director_name
-                });
-            } else {
-                country_movies[data[i].country] = [];
-                country_movies[data[i].country].push({
-                    "movie_title": data[i].title,
-                    "movie_budget": data[i].budget,
-                    "movie_imdb": data[i].imdb_score,
-                    "director_name": data[i].director_name
-                });
-            }
+        for (var i = 0; i < data.length; i++) {
+            if (data[i].country && data[i].country != "Official site"){ // in case country doesn't have name
+                country_count[data[i].country] = 1 + (country_count[data[i].country] || 0);
+                if (country_movies[data[i].country]){
+                    country_movies[data[i].country].push({
+                        "movie_title": data[i].title,
+                        "movie_budget": data[i].budget,
+                        "movie_imdb": data[i].imdb_score,
+                        "director_name": data[i].director_name
+                    });
+                } else {
+                    country_movies[data[i].country] = [];
+                    country_movies[data[i].country].push({
+                        "movie_title": data[i].title,
+                        "movie_budget": data[i].budget,
+                        "movie_imdb": data[i].imdb_score,
+                        "director_name": data[i].director_name
+                    });
+                }
             
             // account for missing budgets
             if (data[i].budget) {
@@ -58,10 +52,20 @@ d3.csv("data/movies.csv", function(d) {
             }
             country_budget[data[i].country] = (country_budget[data[i].country] + data[i].budget || data[i].budget);
             country_imdbscore[data[i].country] = (country_imdbscore[data[i].country] + data[i].imdb_score || data[i].imdb_score);
+            }
+            // keep track of movies and their measures
+            if (data[i].title && data[i].budget && data[i].imdb_score) {
+                movie_data.push(
+                    {
+                        'm_title' : data[i].title,
+                        'm_budget': data[i].budget,
+                        'm_imdb' : data[i].imdb_score
+                    });
+            } 
+            
         }
-    }
     country_data = []
-    console.log(country_data);
+    
     for (country in country_count){
         country_data.push({
             "country" : country,
@@ -69,16 +73,13 @@ d3.csv("data/movies.csv", function(d) {
             "avg_budget": (+country_budget[country] /  country_budget_count[country] || 0)  ,
             "avg_imdbscore": +country_imdbscore[country] /  country_count[country],
             "movies": country_movies[country]
-
         });   
     }    
     initialize();
-});
+    });
 
 function setup_graph() {
    
-    var graph = document.getElementById('graph');
-    
     width = 900 - margin.left - margin.right;
     height = 700 - margin.top - margin.bottom;
     
@@ -86,24 +87,24 @@ function setup_graph() {
         .append('svg')
         .attr('width', width + margin.left + margin.right)
         .attr('height', height + margin.top + margin.bottom)
-        
-    bars = svg.append('g')
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");   
+        .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
     
-    d3.select(graph)
-        .append('p')
-            .attr('id','buttonzone')
-            .append('button')
-                .attr('id','filterbutton')
-                .style("border", "1px solid black")
-                .text('Filter Data')
-    d3.select("#buttonzone")
-        .append('button')
-            .attr('id','desbutton')
-            .style("border", "1px solid black")
-            .text('Sort Descending')
-    
+    // add axis labels
+    svg.append("text")
+        .attr("x", 6)
+        .attr("y", -2)
+        .attr("class", "label")
+        .text("IMDB Rating")
+    svg.append("text")
+        .attr("x", width-2)
+        .attr("y", height-6)
+        .attr("text-anchor", "end")
+        .attr("class", "label")
+        .text("Budget")
+}
 
+function build_buttons() {
     //create select options to show countries by
     selectList = document.createElement("SELECT")
     selectList.id = 'sList';
@@ -115,93 +116,75 @@ function setup_graph() {
         option.text = ops[i];
         selectList.appendChild(option);
     }
-    // add axis labels
-    svg.append("text")
-        .attr("x", 80)
-        .attr("y", 13)
-        .attr("class", "label")
-        // .text("Countries");
-        .text("IMDB Rating")
-    svg.append("text")
-        .attr('id','xaxisname')
-        .attr("x", width-2)
-        .attr("y", height-6)
-        .attr("text-anchor", "end")
-        .attr("class", "label")
-        // .text(selectList.options[selectList.selectedIndex].value);  
-        .text("Budget")
-}
-function build_scales2() {
-    xScale = d3.scaleLinear().range([0, width]);
-    yScale = d3.scaleLinear().range([0, height]);
-    yAxis = d3.axisLeft(yScale);
+    d3.select(graph)
+        .append('p')
+            .attr('id','buttonzone')
+            .append('button')
+                .attr('id','filterbutton')
+                .style("border", "1px solid black")
+                .text('Filter Data')
 
-    // https://stackoverflow.com/questions/42337710/d3-bar-chart-sorting-not-working
-    country_data.sort((a, b) => d3.descending(a.avg_budget, b.avg_budget));
-    
-    xScale.domain([0, d3.max(country_data, function(d) {
-        return d.avg_budget;
-    })]);
-
-    yScale.domain(country_data.map(function(d) {
-        return d.country;
-    }));
 }
 function build_scales() {
-    xScale = d3.scaleLinear().range([0, width])
-    yScale = d3.scaleBand().rangeRound([0, height], 0.8);
-    yAxis = d3.axisLeft(yScale);
-    xAxis = d3.axisBottom().scale(xScale);
+    xScale = d3.scaleSqrt().range([0, width]);
+    yScale = d3.scaleLinear().range([height,0]);
+    yAxis = d3.axisLeft(yScale)
+    xAxis = d3.axisBottom(xScale)
+    svg.append("g")
+    .attr("transform", "translate(0," + height + ")")
+    .attr("class", "x axis")
+    .call(xAxis);
 
-    
-    country_data.sort((a, b) => d3.descending(a.avg_budget, b.avg_budget));
-    
-    xScale.domain([0, d3.max(country_data, function(d) {
-        return d.avg_budget;
-    })]);
-
-    yScale.domain(country_data.map(function(d) {
-        return d.country;
-    }));
+    svg.append("g")
+    .attr("transform", "translate(0,0)")
+    .attr("class", "y axis")
+    .call(yAxis);  
 }
 
 function updateScalesFromData() {
-
-    bars.append('g')
-        .attr('class', 'y axis')
-        .attr('transform', 'translate(20, 0)')
-        .attr('id','y_axis')
-        .call(yAxis);   
-    bars.append('g')
-        .selectAll('.bar')
-       
-        .data(country_data)
-        .enter()
-        .append('rect')
-        .attr('class', 'bar')
-        .attr('x', 30)
-        .attr('y', function(d) {
-            return yScale(d.country);
-        })
-        .attr('width', function(d) {
-            return xScale(d.avg_budget);
-        })
-        .attr('height', function(d) {
-            return yScale.bandwidth()*.8;
-        })
-        .attr('fill', "steelblue")
-        .on("mouseover", function() {
-            d3.select(this)
-                .attr("fill", "red");
-
-        })
-        .on("mouseout", function(d, i) {
-            d3.select(this).attr("fill", function() {
-                return "steelblue";
-            });
-        });;
-    
+    xScale.domain([0,d3.max(movie_data,d=> d.m_budget)]).nice();
+    yScale.domain([0,d3.max(movie_data,d=> d.m_imdb)]).nice();
+    xAxis.scale(xScale);
+    yAxis.scale(yScale);
+    d3.select(".x.axis").transition().duration(animation_duration).call(xAxis);
+    d3.select(".y.axis").transition().duration(animation_duration).call(yAxis);    
 }
+
+function build_scatterplot() {
+
+    var bubbleSelection = svg.selectAll("g.bubble")
+      .data(movie_data, d=> d.m_title);
+  
+    bubbleSelection.exit()
+    .transition().duration(animation_duration)
+      .attr("transform", "translate(0,0)")
+      .style("fill-opacity", 0) 
+      .remove();
+  
+    var enter = bubbleSelection
+      .enter()
+      .append("g")
+      .attr("class", "bubble");
+    enter
+      .append("circle")
+      .attr("r", 5)
+      .style("fill", 'red')
+     
+    enter
+      .append("text")
+      .attr("x", 5)
+      .attr("alignment-baseline", "middle")
+      .text(d=> d.m_title);
+  
+    enter.merge(bubbleSelection)
+      .transition().duration(animation_duration)
+      .attr("transform", function(d) {
+        return "translate(" + xScale(d.m_budget) + ","
+        + yScale(d.m_imdb) + ")";
+      });
+  }
+  
+
 function updating() {
     d3.select('#filterbutton').on('click', function() {
         d3.select('#xaxisname').text(selectList.options[selectList.selectedIndex].value)
@@ -333,7 +316,9 @@ function createChoropleth() {
 function initialize() {
     setup_graph();
     build_scales();
+    build_buttons();    
     updateScalesFromData(); 
+    build_scatterplot();
     updating();
     createChoropleth();
 }

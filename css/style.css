@@ -56,6 +56,23 @@ body {
 	background-color: #FFF1F0;
 }
 
+.bubble {
+  opacity: 1;
+  transition: opacity 0.3s;
+}
+.bubble text {
+  opacity: 0;
+  pointer-events: none;
+  font-size: 12px;
+}
+
+.bubble:hover text {
+  opacity: 1;
+}
+
+.bubble:hover circle {
+  fill-opacity: 1;
+}
 
 text {
 	font-family: 'Lora', serif;
