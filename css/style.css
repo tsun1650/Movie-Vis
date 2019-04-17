@@ -1,9 +1,5 @@
-.bar {
-  fill: steelblue;
-}
-.bar:hover {
-  fill: brown;
-}
+
+
 .axis {
   font: 10px sans-serif;
 }
@@ -54,4 +50,34 @@
   margin: -2px 0 0 0;
   top: 100%;
   left: 0;
+}
+
+body {
+	background-color: #FFF1F0;
+}
+
+
+text {
+	font-family: 'Lora', serif;
+	color:#231F20;
+}
+
+h1, h2, h3, p {
+	font-family: 'Lora', serif;
+	color:#231F20;
+	overflow-wrap: break-word;
+}
+h1, h2, h3 {
+	font-family: 'Roboto', sans-serif;
+	font-weight:bold;
+}
+
+
+.container {
+	width: 60%;
+	margin:0 auto;
+}
+
+.button {
+	display: inline;
 }

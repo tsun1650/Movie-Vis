@@ -22,16 +22,36 @@ d3.csv("data/movies.csv", function(d) {
         country : d.country,
         title : d.movie_title,
         budget : +d.budget,
-        imdb_score : +d.imdb_score
+        imdb_score : +d.imdb_score,
+        director_name: d.director_name
     }; 
     }, function(data) {
     country_count = {};
     country_budget = {};
     country_imdbscore = {};
-    country_budget_count = {}
+    country_budget_count = {};
+    country_movies = {};
+
     for (var i = 0; i < data.length; i++) {
-        if (data[i].country && data[i].country != 'Official site'){ // in case country doesn't have name
+        if (data[i].country && data[i].country != "Official site"){ // in case country doesn't have name
             country_count[data[i].country] = 1 + (country_count[data[i].country] || 0);
+            if (country_movies[data[i].country]){
+                country_movies[data[i].country].push({
+                    "movie_title": data[i].title,
+                    "movie_budget": data[i].budget,
+                    "movie_imdb": data[i].imdb_score,
+                    "director_name": data[i].director_name
+                });
+            } else {
+                country_movies[data[i].country] = [];
+                country_movies[data[i].country].push({
+                    "movie_title": data[i].title,
+                    "movie_budget": data[i].budget,
+                    "movie_imdb": data[i].imdb_score,
+                    "director_name": data[i].director_name
+                });
+            }
+            
             // account for missing budgets
             if (data[i].budget) {
                 country_budget_count[data[i].country] = 1 + (country_budget_count[data[i].country] || 0);
@@ -41,12 +61,15 @@ d3.csv("data/movies.csv", function(d) {
         }
     }
     country_data = []
+    console.log(country_data);
     for (country in country_count){
         country_data.push({
             "country" : country,
             "count" : (+country_count[country] || 0),
             "avg_budget": (+country_budget[country] /  country_budget_count[country] || 0)  ,
-            "avg_imdbscore": +country_imdbscore[country] /  country_count[country]
+            "avg_imdbscore": +country_imdbscore[country] /  country_count[country],
+            "movies": country_movies[country]
+
         });   
     }    
     initialize();
@@ -165,7 +188,18 @@ function updateScalesFromData() {
         })
         .attr('height', function(d) {
             return yScale.bandwidth()*.8;
-        });
+        })
+        .attr('fill', "steelblue")
+        .on("mouseover", function() {
+            d3.select(this)
+                .attr("fill", "red");
+
+        })
+        .on("mouseout", function(d, i) {
+            d3.select(this).attr("fill", function() {
+                return "steelblue";
+            });
+        });;
     
 }
 function updating() {
@@ -294,6 +328,7 @@ function createChoropleth() {
            });
         });
 }
+
 
 function initialize() {
     setup_graph();
