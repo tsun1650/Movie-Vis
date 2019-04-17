@@ -189,12 +189,12 @@ function updating() {
 }
 function createChoropleth() {
     // define map projection
-    w= 1000;
-    h = 800
+    w= 900;
+    h = 600
    
     var projection = d3.geoMercator()
         .translate([w/2, h/1.5])
-        .scale([150]);
+        .scale([120]);
 
     //Define default path generator
     var path = d3.geoPath()
@@ -208,7 +208,8 @@ function createChoropleth() {
                 //.attr("tranform", "translate(0 ," + margin.top + ")");
 
     var color = d3.scaleQuantile()
-        .range(["rgb(237, 248, 233)", "rgb(186, 228, 179)", "rgb(116,196,118)", "rgb(49,163,84)", "rgb(0,109,44)"]);
+        .range(["rgb(186, 228, 179)", "rgb(139, 201, 128)", "rgb(116,196,118)", "rgb(30, 158, 69)", "rgb(0,109,44)"]);
+
     var min = Math.min.apply(null, country_data.map(item => item.avg_budget)),
         max = Math.max.apply(null, country_data.map(item => item.avg_budget));
     color.domain([min, max]);
@@ -258,10 +259,23 @@ function createChoropleth() {
                     //If value exists
                     return color(value);
                 } else {
-                    // If value is undefined
-                    //we do this because alaska and hawaii are not in dataset we are using but still in projections
-                    return "#ccc"
+                      return "#ccc"
                 }
+            })
+            .on("mouseover", function(d) {
+                // d3.select(this).attr("r",10);
+                d3.select(this).style("fill",'yellow')
+                // d3.select(this).style("fill", d3.select(this).attr('stroke')).attr('color', 'yellow')                  
+                console.log(d.properties.name);
+            }).on("mouseout", function(d) {
+                if (color(d.properties.value)){
+                    d3.select(this).style("fill",color(d.properties.value));
+                } else {
+                    d3.select(this).style("fill","#ccc");
+                }
+                
+                // d3.select(this).attr("r",5);
+                console.log(d);
             });
         });
 }
