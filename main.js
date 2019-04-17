@@ -7,6 +7,7 @@ var world_data = [];
 const animation_duration = 2000;
 const margin = {top: 20, right: 40, bottom: 20, left: 90};
 
+
 //load world map data 
 // d3.json("data/world.json", function(error, p) {
 //     all_features = p.features;
@@ -194,19 +195,28 @@ function createChoropleth() {
    
     var projection = d3.geoMercator()
         .translate([w/2, h/1.5])
-        .scale([120]);
+        .scale([130]);
 
+    var tip = d3.tip()
+        .attr('class', 'd3-tip')
+        .offset([-7, 0])
+        .html(function(d) {
+            var price = (d.properties.value) ?  "$" + d.properties.value.toFixed(2) :  "$0";
+            return "<strong>"+d.properties.name + "</strong></br>" + price;
+            
+        })
     //Define default path generator
     var path = d3.geoPath()
         .projection(projection);
     var svg = d3.select("#world")
         .append("svg")
-            .attr("id", "chart")
+            .attr("id", "worldmap")
             .attr("width", w)
             .attr("height", h)
             .append("g")
-                //.attr("tranform", "translate(0 ," + margin.top + ")");
+                .attr("transform", "translate(" + 10 + "," + 10 + ")")
 
+    svg.call(tip);
     var color = d3.scaleQuantile()
         .range(["rgb(186, 228, 179)", "rgb(139, 201, 128)", "rgb(116,196,118)", "rgb(30, 158, 69)", "rgb(0,109,44)"]);
 
@@ -221,27 +231,16 @@ function createChoropleth() {
     });
     d3.json("data/world.json", function(json){
 
-        //Merge the agriculture and GeoJSON data
-        //Loop through once for each agriculture data value
-        for(var i = 0; i < country_data.length; i++){
-            // grab state name
+        //Merge data
+        for (var i = 0; i < country_data.length; i++){
             var dataCountry = country_data[i].country;
-
-            //grab data value, and convert from string to float
             var dataValue = parseFloat(country_data[i].avg_budget);
-            // console.log(dataCountry," ", dataValue);
-            //find the corresponding state inside the GeoJSON
-            for(var n = 0; n < json.features.length; n++){
-
-                    // properties name gets the states name
+            
+            for (var n = 0; n < json.features.length; n++){
                     var jsonCountry = json.features[n].properties.name;
-                    // if statment to merge by name of state
-                    if(dataCountry == jsonCountry){
+                    if (dataCountry == jsonCountry){
                         //Copy the data value into the JSON
-                        // basically creating a new value column in JSON data
                         json.features[n].properties.value = dataValue;
-                        // console.log(dataCountry, ", ", jsonCountry, ', ', dataValue)
-                        //stop looking through the JSON
                         break;
                     }
                 }
@@ -263,20 +262,19 @@ function createChoropleth() {
                 }
             })
             .on("mouseover", function(d) {
-                // d3.select(this).attr("r",10);
                 d3.select(this).style("fill",'yellow')
-                // d3.select(this).style("fill", d3.select(this).attr('stroke')).attr('color', 'yellow')                  
-                console.log(d.properties.name);
+                price = d3.select(this)
+               
+                tip.show(d, d3.select(this))
+                //console.log(d.properties.name);
             }).on("mouseout", function(d) {
+                tip.hide(d, d3.select(this))	
                 if (color(d.properties.value)){
                     d3.select(this).style("fill",color(d.properties.value));
                 } else {
                     d3.select(this).style("fill","#ccc");
                 }
-                
-                // d3.select(this).attr("r",5);
-                console.log(d);
-            });
+           });
         });
 }
 
