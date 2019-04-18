@@ -154,6 +154,7 @@ function build_scales() {
         .attr("transform", "translate(0," + height + ")")
         .attr("class", "x-axis")
         .call(xAxis);
+            
     // svg.select(".x-axis")
     //     .select('path')
     //     .style('stroke-width','1')
@@ -165,12 +166,15 @@ function build_scales() {
 }
 
 function updateScalesFromData() {
-    xScale.domain([0,d3.max(movie_data,d=> d.m_budget)]).nice();
+    xScale.domain([0,d3.max(movie_data,d=> d.m_budget)/2]).nice();
     yScale.domain([0,d3.max(movie_data,d=> d.m_imdb)]).nice();
     xAxis.scale(xScale);
     yAxis.scale(yScale);
     d3.select(".x-axis").transition().duration(animation_duration).call(xAxis);
-    d3.select(".y-axis").transition().duration(animation_duration).call(yAxis);    
+    d3.select(".y-axis").transition().duration(animation_duration).call(yAxis);
+    d3.select(".x-axis").selectAll("tick")  
+            .selectAll('text')
+                .attr("transform", "rotate(90)");    
 }
 
 function build_scatterplot() {
