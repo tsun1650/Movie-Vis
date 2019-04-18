@@ -190,7 +190,10 @@ function build_scatterplot() {
       .append("text")
       .attr("x", 5)
       .attr("alignment-baseline", "middle")
-      .text(d=> d.m_title);
+      .text(function(d) {
+        return d.m_title + '- $' + d.m_budget + ', IMDB ' + d.m_imdbscore;
+      })
+    //   .text(d=> d.m_title);
   
     enter.merge(bubbleSelection)
       .transition().duration(animation_duration)
