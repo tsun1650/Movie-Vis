@@ -1,4 +1,3 @@
-//window.onload = initialize;
 var country_data;
 var xScale, yScale, yAxis, xAxis;
 var bars, width, height, svg, map_svg, path, tip;
@@ -9,19 +8,21 @@ const animation_duration = 2000;
 const margin = {top: 20, right: 40, bottom: 20, left: 40};
 var length1 = 0
 var measureVal;
-
+var firstRun = 0;
 // load movie data
 //nest country data here 
 var atlas = {}
 var seencountries = []
+var raw_world = []
 d3.csv("data/movies.csv", function(movies) {
     d3.json('data/world.json', function(geojsondata) {
+        raw_world = geojsondata.features
+       
         for (m in movies) {
             var moviecountry = movies[m].country;
             
             for (f in geojsondata.features){ 
                 var jsoncountry = geojsondata.features[f].properties.name;
-                
                 if (moviecountry == jsoncountry) {
                     var score = parseFloat(movies[m].imdb_score ? movies[m].imdb_score : 0);
                     var budget = parseFloat(movies[m].budget ? movies[m].budget : 0);
@@ -38,7 +39,8 @@ d3.csv("data/movies.csv", function(movies) {
                         atlas[moviecountry] = {
                             "count" : 1,
                             "avg_imdbscore" : score,
-                            "avg_budget" : budget
+                            "avg_budget" : budget,
+                            "index" : f
                         }; 
                     }
                 }
@@ -61,15 +63,28 @@ d3.csv("data/movies.csv", function(movies) {
                 "country" : thiscountry,
                 "avg_budget" : (atlas[thiscountry].avg_budget/atlas[thiscountry].count).toFixed(2),
                 "avg_imdbscore" : (atlas[thiscountry].avg_imdbscore/atlas[thiscountry].count).toFixed(2),
-                "count" : atlas[thiscountry].count    
+                "count" : atlas[thiscountry].count,
+                'index' : atlas[thiscountry].index
             })
         }
-
+        
+        // updateScalesFromData();
+        setup_graph();
+        build_scales();
+        build_buttons();    
+        updateScalesFromData(); 
+        build_scatterplot();
+        
+        createChoropleth();
+        // updating();
+        firstColor();
+        updating()
+        // colorMap("count");
     });
+   
     
     
-    
-    initialize();
+    // initialize();
     
 });
 
@@ -141,18 +156,14 @@ function build_scales() {
 }
 
 function updateScalesFromData() {
-    console.log('hey',movie_data.length)
-    for (v in movie_data) {
-        console.log('hello', movie_data[v])
-    }
-    
     
     xScale.domain([0,d3.max(movie_data,d=> d.m_budget)]).nice();
     yScale.domain([0,d3.max(movie_data,d=> d.m_imdbscore)]).nice();
     xAxis.scale(xScale);
     yAxis.scale(yScale);
     d3.select(".x-axis").transition().duration(animation_duration).call(xAxis);
-    d3.select(".y-axis").transition().duration(animation_duration).call(yAxis);    
+    d3.select(".y-axis").transition().duration(animation_duration).call(yAxis);  
+    build_scatterplot()  
 }
 
 function build_scatterplot() {
@@ -199,11 +210,11 @@ function updating() {
     d3.select('#filterbutton').on('click', function() {
        
         v = selectList.options[selectList.selectedIndex].value
-       
+        console.log("clicking here")
     
-        if (v == "Average IMDB Rating") setMeasure("avg_imdbscore");
-        else if (v == "Average Budget") setMeasure("avg_budget");
-        else if (v == "Total Movies") setMeasure("count");
+        if (v == "Average IMDB Rating") colorMap("avg_imdbscore");
+        else if (v == "Average Budget") colorMap("avg_budget");
+        else if (v == "Total Movies") colorMap("count");
         
          
     });
@@ -217,7 +228,6 @@ function createChoropleth() {
         .translate([w/2, h/1.5])
         .scale([130]);
 
-    
     //Define default path generator
     path = d3.geoPath()
         .projection(projection);
@@ -228,87 +238,136 @@ function createChoropleth() {
             .attr("height", h)
             .append("g")
                 .attr("transform", "translate(" + 10 + "," + 10 + ")")
-    
+    console.log('created map')
 }
-function colorMap(measure_val){
+function firstColor(){
+    console.log('first')
+    if (!(firstRun)){
+    var color = d3.scaleQuantile()
+        .range(['rgb(237,248,233)','rgb(186,228,179)','rgb(116,196,118)','rgb(49,163,84)','rgb(0,109,44)']);
+    var min, max;
     
+    min = Math.min.apply(null, world_data.map(item => item.avg_budget)),
+    max = Math.max.apply(null, world_data.map(item => item.avg_budget));
+
+    color.domain([min, max]);
+
+    var paths;
+    
+    for (var i = 0; i < world_data.length; i++) {
+        var dataCountry = world_data[i].country;
+        var dataValue;
+        dataValue = parseFloat(world_data[i].avg_budget);
+        raw_world[world_data[i].index].properties.value = dataValue;
+    }
+    paths = map_svg.selectAll("path")
+            .data(raw_world)
+            .enter()
+            // .update() instead of enter()- just take out .enter()
+            .append("path")
+            .attr("d", path)
+            .style("fill", function(d){
+                //get the data value
+                if(d.properties.value){
+                    return color(d.properties.value);
+                } else {
+                    return "#ccc"
+                }
+            })
+    paths = map_svg.selectAll("path")
+        .on("mouseover", function(d) {
+            d3.select(this).style("fill",'yellow')
+            val = d3.select(this)
+            tip.show(d, d3.select(this))
+            
+        }).on("mouseout", function(d) {
+            tip.hide(d, d3.select(this))	
+            if (color(d.properties.value)){
+                d3.select(this).style("fill",color(d.properties.value));
+            } else {
+                d3.select(this).style("fill","#ccc");
+            }
+        });
+
+    tip = d3.tip()
+        .attr('class', 'd3-tip')
+        .offset([-7, 0])
+        .html(function(d) {
+            var dataval;
+            
+            dataval = (d.properties.value) ?  "$" + d.properties.value.toFixed(2) :  "$0";
+           
+            return "<strong>"+d.properties.name + "</strong></br>" + dataval;      
+        })
+    map_svg.call(tip);
+    firstRun = 1;
+    }
+}
+    
+function colorMap(measure_val){
+    if (firstRun){
+        console.log('runing')
+    console.log('trying to color')
     var color = d3.scaleQuantile()
         .range(['rgb(237,248,233)','rgb(186,228,179)','rgb(116,196,118)','rgb(49,163,84)','rgb(0,109,44)']);
     var min, max;
     if (measure_val == 'avg_budget') {
-        min = Math.min.apply(null, country_data.map(item => item.avg_budget)),
-        max = Math.max.apply(null, country_data.map(item => item.avg_budget));
+        min = Math.min.apply(null, world_data.map(item => item.avg_budget)),
+        max = Math.max.apply(null, world_data.map(item => item.avg_budget));
     } else if (measure_val == 'avg_imdbscore') {
-        min = Math.min.apply(null, country_data.map(item => item.avg_imdbscore)),
-        max = Math.max.apply(null, country_data.map(item => item.avg_imdbscore));
+        min = Math.min.apply(null, world_data.map(item => item.avg_imdbscore)),
+        max = Math.max.apply(null, world_data.map(item => item.avg_imdbscore));
     } else if (measure_val == 'count') {
-        min = Math.min.apply(null, country_data.map(item => item.count)),
-        max = Math.max.apply(null, country_data.map(item => item.count));
+        min = Math.min.apply(null, world_data.map(item => item.count)),
+        max = Math.max.apply(null, world_data.map(item => item.count));
     }
     color.domain([min, max]);
 
-   
+    var paths;
     
-    // d3.json("data/world.json", function(json){
+    for (var i = 0; i < world_data.length; i++) {
+        var dataCountry = world_data[i].country;
+        var dataValue;
+        if (measure_val == 'avg_budget') {
+            dataValue = parseFloat(world_data[i].avg_budget);
+        } else if (measure_val == 'avg_imdbscore') {
+            dataValue = parseFloat(world_data[i].avg_imdbscore);
+        } else if (measure_val == 'count') {
+            dataValue = parseFloat(world_data[i].count);
+        }
+        raw_world[world_data[i].index].properties.value = dataValue;
+      
+    }
+    paths = map_svg.selectAll("path")
+            .data(raw_world)
+            .enter()
+            // .update() instead of enter()- just take out .enter()
+            .append("path")
+            .attr("d", path)
+            .style("fill", function(d){
+                //get the data value
+                if(d.properties.value){
+                    return color(d.properties.value);
+                } else {
+                    return "#ccc"
+                }
+            })
+    paths = map_svg.selectAll("path")
+        .on("mouseover", function(d) {
+            d3.select(this).style("fill",'yellow')
+            val = d3.select(this)
+            tip.show(d, d3.select(this))
+            
+        }).on("mouseout", function(d) {
+            tip.hide(d, d3.select(this))	
+            if (color(d.properties.value)){
+                d3.select(this).style("fill",color(d.properties.value));
+            } else {
+                d3.select(this).style("fill","#ccc");
+            }
+        });
 
-    //     //Merge data
-    //     for (var i = 0; i < country_data.length; i++){
-    //         var dataCountry = country_data[i].country;
-    //         var dataValue;
-    //         if (measure_val == 'avg_budget') {
-    //             dataValue = parseFloat(country_data[i].avg_budget);
-    //         } else if (measure_val == 'avg_imdbscore') {
-    //             dataValue = parseFloat(country_data[i].avg_imdbscore);
-    //         } else if (measure_val == 'count') {
-    //             dataValue = parseFloat(country_data[i].count);
-    //         }
-           
-    //         for (var n = 0; n < json.features.length; n++){
-    //                 var jsonCountry = json.features[n].properties.name;
-    //                 if (dataCountry == jsonCountry){
-    //                     //Copy the data value into the JSON
-    //                     json.features[n].properties.value = dataValue;
-    //                     break;
-    //                 }
-    //             }
-    //         }
-    //     //create a different function for init for coloring
-
-        
-    //     var paths = map_svg.selectAll("path")
-    //         .data(json.features)
-    //         .enter()
-    //         // .update() instead of enter()- just take out .enter()
-    //         .append("path")
-    //         .attr("d", path)
-    //         .style("fill", function(d){
-    //             //get the data value
-    //             var value = d.properties.value;
-                
-    //             if(value){
-    //                 //If value exists
-    //                 return color(value);
-    //             } else {
-    //                   return "#ccc"
-    //             }
-    //         })
-    //         .on("mouseover", function(d) {
-    //             d3.select(this).style("fill",'yellow')
-    //             val = d3.select(this)
-               
-    //             tip.show(d, d3.select(this))
-                
-    //         }).on("mouseout", function(d) {
-    //             tip.hide(d, d3.select(this))	
-    //             if (color(d.properties.value)){
-    //                 d3.select(this).style("fill",color(d.properties.value));
-    //             } else {
-    //                 d3.select(this).style("fill","#ccc");
-    //             }
-    //        });
-    //     });
-
-        tip = d3.tip()
+    tip = d3.tip()
         .attr('class', 'd3-tip')
         .offset([-7, 0])
         .html(function(d) {
@@ -320,27 +379,10 @@ function colorMap(measure_val){
             } else if (measure_val == 'count') {
                 dataval = dataval = (d.properties.value) ?  d.properties.value: '0';
             }
-            return "<strong>"+d.properties.name + "</strong></br>" + dataval;
-            
-            
+            return "<strong>"+d.properties.name + "</strong></br>" + dataval;      
         })
     map_svg.call(tip);
 
 }
-    
-
-
-
-function initialize() {
-    setup_graph();
-    build_scales();
-    // build_buttons();    
-    updateScalesFromData(); 
-    
-    build_scatterplot();
-  
-    // createChoropleth();
-    // updating();
-    // colorMap("avg_budget");
-    
 }
+    

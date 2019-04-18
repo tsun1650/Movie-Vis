@@ -70,8 +70,12 @@ body {
   opacity: 1;
 }
 .selected {
+  fill:blue;
 	stroke:blue;
-	fill:blue;
+	
+}
+.notselected {
+	visibility: hidden;
 }
 .circle {
 	stroke:green;
