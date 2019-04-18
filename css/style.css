@@ -69,7 +69,17 @@ body {
 .bubble:hover text {
   opacity: 1;
 }
+.selected {
+	stroke:blue;
+	fill:blue;
+}
+.circle {
+	stroke:green;
+  fill:green;
+  height : 2px;
+  width: 2px;
 
+}
 .bubble:hover circle {
   fill-opacity: 1;
 }
