@@ -157,11 +157,6 @@ function build_scales() {
     //     .style('stroke-width','1')
     //     .style('stroke', 'black');
 
-    // svg.select(".x-axis")
-    //     .selectAll('.tick')
-    //         .attr("transform", "rotate(90)")
-    //         .style('stroke-width','1')
-    //         .style('stroke', 'red');
     svg.append("g")
         .attr("transform", "translate(0,0)")
         .attr("class", "y-axis")
@@ -221,6 +216,7 @@ function build_scatterplot() {
       .attr("class", "label")
       .attr("x", 6)
       .attr("alignment-baseline", "middle")
+      
       .text(function(d) {
         return d.m_title + '- $' + Number(d.m_budget).toLocaleString() + ', IMDB ' + d.m_imdbscore  +' (' + d.m_country + ")";
       })
@@ -320,7 +316,24 @@ function firstColor(){
             } else {
                 d3.select(this).style("fill","#ccc");
             }
+        })
+        .on("click", function(d) {
+            var clicked_country = d.properties.name;
+                d3.select("#graph").selectAll('circle').classed('selected', false);
+               
+                d3.select("#graph").selectAll('circle').classed('selected', function(d2) {
+                    // console.log(d2)
+					if (d2.m_country == clicked_country) {
+                        
+                        d3.select(this).style('fill','blue')
+						return true; 
+					} else {
+                        d3.select(this).style('fill','red')
+						return false;
+					}
+				});
         });
+
         
 
     tip = d3.tip()
@@ -399,6 +412,21 @@ function colorMap(measure_val){
             } else {
                 d3.select(this).style("fill","#ccc");
             }
+        }) .on("click", function(d) {
+            var clicked_country = d.properties.name;
+                d3.select("#graph").selectAll('circle').classed('selected', false);
+               
+                d3.select("#graph").selectAll('circle').classed('selected', function(d2) {
+                    // console.log(d2)
+					if (d2.m_country == clicked_country) {
+                        
+                        d3.select(this).style('fill','blue')
+						return true; 
+					} else {
+                        d3.select(this).style('fill','red')
+						return false;
+					}
+				});
         });
 
     tip = d3.tip()
