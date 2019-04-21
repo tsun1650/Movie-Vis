@@ -97,7 +97,7 @@ function setup_graph() {
     svg = d3.select("#graph")
         .append('svg')
         .attr('width', width + margin.left + margin.right)
-        .attr('height', height + margin.top + margin.bottom)
+        .attr('height', 900 + margin.top + margin.bottom)
         .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
     
@@ -112,7 +112,7 @@ function setup_graph() {
         .attr("y", height-6)
         .attr("text-anchor", "end")
         .attr("class", "label")
-        .text("Budget")
+        .text("Budget ($)")
 }
 
 function build_buttons() {
@@ -144,11 +144,24 @@ function build_scales() {
     svg.append("g")
         .attr("transform", "translate(0," + height + ")")
         .attr("class", "x-axis")
-        .call(xAxis);
-    svg.select(".x-axis")
-        .select('path')
-        .style('stroke-width','1')
-        .style('stroke', 'black');
+        .call(xAxis)
+            .selectAll("text")  
+                
+                .style("text-anchor", "end")
+                .attr("dx", "-.8em")
+                .attr("dy", ".15em")
+                .attr("transform", "rotate(-65)" );
+        
+    // svg.select(".x-axis")
+    //     .select('path')
+    //     .style('stroke-width','1')
+    //     .style('stroke', 'black');
+
+    // svg.select(".x-axis")
+    //     .selectAll('.tick')
+    //         .attr("transform", "rotate(90)")
+    //         .style('stroke-width','1')
+    //         .style('stroke', 'red');
     svg.append("g")
         .attr("transform", "translate(0,0)")
         .attr("class", "y-axis")
@@ -157,13 +170,21 @@ function build_scales() {
 
 function updateScalesFromData() {
     
-    xScale.domain([0,d3.max(movie_data,d=> d.m_budget)]).nice();
+    xScale.domain([0,d3.max(movie_data,d=> d.m_budget)*3]).nice();
     yScale.domain([0,d3.max(movie_data,d=> d.m_imdbscore)]).nice();
     xAxis.scale(xScale);
     yAxis.scale(yScale);
     d3.select(".x-axis").transition().duration(animation_duration).call(xAxis);
     d3.select(".y-axis").transition().duration(animation_duration).call(yAxis);  
-    build_scatterplot()  
+    svg.select(".x-axis")
+        .call(xAxis)
+            .selectAll("text")  
+                .style("text-anchor", "end")
+                .attr("dx", "-.8em")
+                .attr("dy", ".15em")
+                .attr("transform", "rotate(-65)" );
+        
+    // build_scatterplot()  
 }
 
 function build_scatterplot() {
@@ -193,7 +214,7 @@ function build_scatterplot() {
       .attr("y", -10)
       .attr("height", 20)
       .attr("width", function(d) {
-        return 6*(d.m_title + '- $' + Number(d.m_budget).toLocaleString() + ', IMDB ' + d.m_imdbscore).length;
+        // return 6*(d.m_title + '- $' + Number(d.m_budget).toLocaleString() + ', IMDB ' + d.m_imdbscore+ ' (' + d.m_country + ")").length;
       })
     enter
       .append("text")
@@ -201,7 +222,6 @@ function build_scatterplot() {
       .attr("x", 6)
       .attr("alignment-baseline", "middle")
       .text(function(d) {
-
         return d.m_title + '- $' + Number(d.m_budget).toLocaleString() + ', IMDB ' + d.m_imdbscore  +' (' + d.m_country + ")";
       })
   
@@ -301,6 +321,7 @@ function firstColor(){
                 d3.select(this).style("fill","#ccc");
             }
         });
+        
 
     tip = d3.tip()
         .attr('class', 'd3-tip')
@@ -367,7 +388,7 @@ function colorMap(measure_val){
             })
     paths = map_svg.selectAll("path")
         .on("mouseover", function(d) {
-            d3.select(this).style("fill",'yellow')
+            d3.select(this).style("fill",'lightblue')
             val = d3.select(this)
             tip.show(d, d3.select(this))
             
