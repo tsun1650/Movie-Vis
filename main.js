@@ -152,7 +152,7 @@ function build_scales() {
     svg.append("g")
         .attr("transform", "translate(0,0)")
         .attr("class", "y-axis")
-        .call(yAxis);  
+        .call(yAxis);
 }
 
 function updateScalesFromData() {
@@ -187,13 +187,23 @@ function build_scatterplot() {
       .style("fill", 'red')
      
     enter
+      .append("rect")
+      .attr("fill","white")
+      .attr("x",5)
+      .attr("y", -10)
+      .attr("height", 20)
+      .attr("width", function(d) {
+        return 6*(d.m_title + '- $' + Number(d.m_budget).toLocaleString() + ', IMDB ' + d.m_imdbscore).length;
+      })
+    enter
       .append("text")
-      .attr("x", 5)
+      .attr("class", "label")
+      .attr("x", 6)
       .attr("alignment-baseline", "middle")
       .text(function(d) {
-        return d.m_title + '- $' + d.m_budget + ', IMDB ' + d.m_imdbscore + ' (' + d.m_country + ")";
+
+        return d.m_title + '- $' + Number(d.m_budget).toLocaleString() + ', IMDB ' + d.m_imdbscore  +' (' + d.m_country + ")";
       })
-    //   .text(d=> d.m_title);
   
     enter.merge(bubbleSelection)
       .transition().duration(animation_duration)
@@ -279,7 +289,7 @@ function firstColor(){
             })
     paths = map_svg.selectAll("path")
         .on("mouseover", function(d) {
-            d3.select(this).style("fill",'yellow')
+            d3.select(this).style("fill",'lightblue')
             val = d3.select(this)
             tip.show(d, d3.select(this))
             
@@ -298,7 +308,7 @@ function firstColor(){
         .html(function(d) {
             var dataval;
             
-            dataval = (d.properties.value) ?  "$" + d.properties.value.toFixed(2) :  "$0";
+            dataval = (d.properties.value) ?  "$" + Number(d.properties.value.toFixed(2)).toLocaleString() :  "$0";
            
             return "<strong>"+d.properties.name + "</strong></br>" + dataval;      
         })

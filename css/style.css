@@ -68,7 +68,19 @@ body {
 
 .bubble:hover text {
   opacity: 1;
+  z-index: 100;
 }
+.bubble rect {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bubble:hover rect {
+	opacity:1;
+	z-index: 100;
+}
+
+
 .selected {
   fill:blue;
 	stroke:blue;
@@ -87,6 +99,7 @@ body {
 .bubble:hover circle {
   fill-opacity: 1;
 }
+
 
 text {
 	font-family: 'Lora', serif;
