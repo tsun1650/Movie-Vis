@@ -191,7 +191,7 @@ function build_scatterplot() {
       .attr("x", 5)
       .attr("alignment-baseline", "middle")
       .text(function(d) {
-        return d.m_title + '- $' + d.m_budget + ', IMDB ' + d.m_imdbscore;
+        return d.m_title + '- $' + d.m_budget + ', IMDB ' + d.m_imdbscore + ' (' + d.m_country + ")";
       })
     //   .text(d=> d.m_title);
   
